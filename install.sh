@@ -12,7 +12,7 @@
 # ============================================================
 set -uo pipefail
 
-VERSION="1.0.1"
+VERSION="1.0.2"
 ARSENAL="$HOME/se-arsenal"
 BIN="$ARSENAL/bin"
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; CYAN='\033[0;36m'; NC='\033[0m'
@@ -265,12 +265,12 @@ case "${1:-help}" in
   remove)
     read -r -p "Remove SE-Arsenal completely from $ARSENAL? [y/N] " ans
     if [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
-      sed -i '/se-arsenal\/bin/d' "$HOME/.bashrc" 2>/dev/null
+      sed -i '/se-arsenal\/bin/d' "$HOME/.bashrc" "$HOME/.zshrc" 2>/dev/null
       rm -rf "$ARSENAL"; echo "SE-Arsenal removed. Open a new terminal to refresh your PATH."
     else echo "Cancelled."; fi
     ;;
   *)
-    echo "se-arsenal · v${VERSION:-1.0.1}"
+    echo "se-arsenal · v${VERSION:-1.0.2}"
     echo "Usage: se-arsenal <list|check|update|remove>"
     ;;
 esac
@@ -278,7 +278,11 @@ CLIEOF
 chmod +x "$BIN/se-arsenal"
 ok "se-arsenal command"
 
-grep -q 'se-arsenal/bin' "$HOME/.bashrc" 2>/dev/null || echo 'export PATH="$HOME/se-arsenal/bin:$PATH"' >> "$HOME/.bashrc"
+# Kali's default shell is zsh, Ubuntu's is bash: register the PATH in both
+# startup files so new terminals of either shell find the launchers.
+for RC in "$HOME/.bashrc" "$HOME/.zshrc"; do
+  grep -q 'se-arsenal/bin' "$RC" 2>/dev/null || echo 'export PATH="$HOME/se-arsenal/bin:$PATH"' >> "$RC"
+done
 export PATH="$BIN:$PATH"
 
 # ---------------- Final report ----------------
@@ -294,6 +298,9 @@ if [ ${#FAIL[@]} -gt 0 ]; then
 fi
 echo
 echo "Manage everything with:  se-arsenal list | check | update | remove"
+echo "In THIS terminal, activate the launchers once with:"
+echo "  export PATH=\"$BIN:\$PATH\""
+echo "Every new terminal picks them up automatically."
 echo "First moves:"
 echo "  sherlock --site Instagram --site TikTok <handle>"
 echo "  maigret <handle>"

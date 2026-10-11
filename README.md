@@ -8,7 +8,7 @@
 
 ![Tools](https://img.shields.io/badge/tools-30%2B-red?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-WSL%20·%20Ubuntu%2024.04%20·%20Kali-blue?style=for-the-badge)
-![Version](https://img.shields.io/badge/version-1.0.1-green?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-1.0.2-green?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-yellow?style=for-the-badge)
 
 </div>
