@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Social Engineering Lab · Class Demo Guide</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --card:#ffffff; --ink:#1c1e26; --muted:#5b6070;
+    --red:#d93636; --orange:#e07b1f; --blue:#2563eb; --green:#1d9e6c;
+    --purple:#7c3aed; --border:#e3e6ef; --code:#0f1220; --codeink:#d7e0ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+  header{background:linear-gradient(135deg,#141728,#3b1042 60%,#5c1030);color:#fff;padding:44px 22px 34px;text-align:center}
+  header h1{margin:0 0 8px;font-size:2rem;letter-spacing:.3px}
+  header p{margin:4px 0;color:#cfd3e6}
+  .wrap{max-width:980px;margin:0 auto;padding:22px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin:18px 0;box-shadow:0 2px 10px rgba(20,23,40,.05)}
+  .card h2{margin:0 0 6px;font-size:1.35rem}
+  .card h3{margin:16px 0 6px;font-size:1.02rem}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.75rem;font-weight:700;letter-spacing:.4px;color:#fff;vertical-align:middle}
+  .b-recon{background:var(--blue)} .b-phish{background:var(--red)} .b-aitm{background:var(--purple)} .b-kit{background:var(--orange)}
+  .why{background:#fff8ec;border-left:4px solid var(--orange);padding:10px 14px;border-radius:8px;margin:10px 0}
+  .how{background:#eef4ff;border-left:4px solid var(--blue);padding:10px 14px;border-radius:8px;margin:10px 0}
+  .prev{background:#ecfbf4;border-left:4px solid var(--green);padding:10px 14px;border-radius:8px;margin:10px 0}
+  .warn{background:#fdeeee;border:1px solid #f3c2c2;padding:12px 16px;border-radius:10px;margin:18px 0}
+  code,kbd{font-family:'Cascadia Code',Consolas,monospace}
+  .cmd{background:var(--code);color:var(--codeink);border-radius:10px;padding:12px 14px;overflow-x:auto;font-family:Consolas,monospace;font-size:.9rem;margin:8px 0;white-space:pre}
+  .cmd .c{color:#7f8db3}
+  .chain{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+  .step{background:#141728;color:#fff;border-radius:10px;padding:8px 14px;font-weight:600;font-size:.92rem}
+  .arrow{color:var(--muted);font-weight:700}
+  table{width:100%;border-collapse:collapse;margin:10px 0}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;font-size:.94rem}
+  th{background:#f0f2f9}
+  ul{margin:6px 0 6px 18px;padding:0}
+  li{margin:3px 0}
+  .small{color:var(--muted);font-size:.88rem}
+  footer{text-align:center;color:var(--muted);padding:26px 10px;font-size:.9rem}
+  .tag{font-size:.8rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎭 Social Engineering Lab</h1>
+  <p><b>Class Demo Guide</b> · how hackers profile you, bait you, and steal your session, and how to stop them</p>
+  <p class="tag">Built for classroom demonstration · isolated lab only · demo accounts only</p>
+</header>
+<div class="wrap">
+
+<div class="warn">
+  <b>⚠️ Lab rules, read first.</b> Everything in this guide runs inside an isolated VM (host-only or NAT network), against accounts and machines we own. The same steps pointed at real people are a crime in Belgium and everywhere else. In class we attack <b>our own demo accounts</b>, then we study how to defeat every step.
+</div>
+
+<div class="card">
+  <h2>🧭 The attack chain</h2>
+  <p>Every real TikTok and Instagram account takeover you have ever seen follows the same five beats. Each tool in this lab owns one beat.</p>
+  <div class="chain">
+    <span class="step">1 · RECON 🔍</span><span class="arrow">→</span>
+    <span class="step">2 · PROFILE 🪪</span><span class="arrow">→</span>
+    <span class="step">3 · BAIT 🎣</span><span class="arrow">→</span>
+    <span class="step">4 · CAPTURE 🕸️</span><span class="arrow">→</span>
+    <span class="step">5 · BYPASS 🔓</span>
+  </div>
+  <table>
+    <tr><th>Beat</th><th>What the attacker does</th><th>Tools</th></tr>
+    <tr><td><b>Recon</b></td><td>Finds every account tied to one username or email</td><td>Sherlock, Maigret, Holehe, theHarvester</td></tr>
+    <tr><td><b>Profile</b></td><td>Builds a picture: school, friends, interests, posting habits</td><td>Maigret reports, public posts</td></tr>
+    <tr><td><b>Bait</b></td><td>Sends the lure: "free followers", "verify your account", "you are in this video?"</td><td>Gophish, SET, Zphisher</td></tr>
+    <tr><td><b>Capture</b></td><td>Fake login page records the password the victim types</td><td>Zphisher, SET harvester, Gophish landing pages</td></tr>
+    <tr><td><b>Bypass</b></td><td>Beats the 2FA code by stealing the session after the real login</td><td>Evilginx</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>🔍 Sherlock <span class="badge b-recon">RECON</span></h2>
+  <p class="tag">Username search · 400+ sites · v0.16.2 · verified live in this lab</p>
+  <div class="why"><b>How hackers use it:</b> a victim uses the same handle everywhere. One Instagram username becomes their TikTok, their GitHub, their dating profile, their gaming accounts. Sherlock finds them all in under a minute, and the attacker now knows where else to attack and what the victim cares about.</div>
+  <div class="how"><b>How it works:</b> Sherlock carries a database of per-site detection rules. For each site it requests the profile URL and checks the response: an HTTP status code, a redirect, or a unique "user not found" string in the page body. Match means the account exists. No login, no API key, just public web requests, fired in parallel.</div>
+  <h3>▶ Demo commands</h3>
+  <div class="cmd"><span class="c"># full sweep on a demo handle</span>
+bin/sherlock demo_handle
+
+<span class="c"># focused: only the platforms the class cares about</span>
+bin/sherlock --site Instagram --site TikTok demo_handle</div>
+  <p><b>What the class should notice:</b> the result list is a map of a person's life, built from one word. Different passwords per site mean nothing if the profile itself tells the attacker the answers to the security questions.</p>
+  <div class="prev"><b>🛡️ Prevention:</b> vary usernames across important and casual accounts, keep personal accounts private, and remove bio links that chain your identities together.</div>
+</div>
+
+<div class="card">
+  <h2>🕵️ Maigret <span class="badge b-recon">RECON</span></h2>
+  <p class="tag">Username search · 3000+ sites · v0.6.6 · verified live in this lab</p>
+  <div class="why"><b>How hackers use it:</b> Sherlock's bigger brother. Attackers run Maigret when they want the deep file: it does not just say an account exists, it reads the public profile and extracts extra identifiers, interests and tags, then follows newly found IDs recursively. One handle becomes a dossier.</div>
+  <div class="how"><b>How it works:</b> same detection-rule engine as Sherlock, with a database of roughly 3000 sites, plus a parser layer (socid-extractor) that pulls structured data out of profile pages: display names, avatars, linked accounts, interest tags. It writes a tidy report you can open in the browser, perfect for showing a class what "public information" really adds up to.</div>
+  <h3>▶ Demo commands</h3>
+  <div class="cmd"><span class="c"># deep sweep with a visual report</span>
+bin/maigret demo_handle
+
+<span class="c"># one platform only, faster for live demos</span>
+bin/maigret --site Instagram demo_handle</div>
+  <p><b>What the class should notice:</b> the extracted interests. "Football, gaming, K-pop" is not trivia, it is the raw material for a bait message the victim will actually click.</p>
+  <div class="prev"><b>🛡️ Prevention:</b> audit yourself once a semester. Run your own handle through Maigret, see what a stranger sees, and lock down what you did not mean to publish.</div>
+</div>
+
+<div class="card">
+  <h2>🌾 theHarvester <span class="badge b-recon">RECON</span></h2>
+  <p class="tag">Email and subdomain harvesting · v4.11.1 · verified in this lab</p>
+  <div class="why"><b>How hackers use it:</b> before attacking a company or a school, attackers collect its email addresses and subdomains from public sources. Every address found is a future phishing target, and the naming pattern (firstname.lastname@) tells them how to guess the rest.</div>
+  <div class="how"><b>How it works:</b> theHarvester queries search engines and public APIs with crafted searches, then parses the results for email patterns and hostnames, and resolves subdomains through DNS. It never touches the target's servers directly in the basic mode, which is why it is so hard to detect.</div>
+  <h3>▶ Demo commands</h3>
+  <div class="cmd"><span class="c"># harvest a demo domain (use example.com in class)</span>
+bin/theharvester -d example.com -b duckduckgo,bing</div>
+  <p><b>What the class should notice:</b> this is all legal, public data. The attack has not even started and the target list is already written.</p>
+  <div class="prev"><b>🛡️ Prevention:</b> organisations should publish fewer direct addresses (use contact forms and role aliases), and everyone should assume their email address is public knowledge. The secret must be the password and the second factor, never the address.</div>
+</div>
+
+<div class="card">
+  <h2>📧 Holehe <span class="badge b-recon">RECON</span></h2>
+  <p class="tag">Email account checker · 120+ sites · verified in this lab</p>
+  <div class="why"><b>How hackers use it:</b> give Holehe one email address and it tells you where that person has accounts: Instagram, TikTok, Twitter, Spotify and more. That list is where password-reset abuse and credential stuffing will be aimed, because people reuse passwords.</div>
+  <div class="how"><b>How it works:</b> Holehe abuses the "forgot password" flow. Sites answer differently for a registered email than for an unknown one (a different message, status or response body). Holehe sends the reset request, reads which answer came back, and marks the account as existing. The site leaks account existence by design, one reset form at a time.</div>
+  <h3>▶ Demo commands</h3>
+  <div class="cmd"><span class="c"># check a demo mailbox you own</span>
+bin/holehe demo@example.com
+
+<span class="c"># only show confirmed accounts</span>
+bin/holehe --only-used demo@example.com</div>
+  <p><b>What the class should notice:</b> no password was guessed and nothing was "hacked". A helpful user-experience feature quietly answers an attacker's question.</p>
+  <div class="prev"><b>🛡️ Prevention:</b> unique password per site (a password manager makes this painless), so one leaked list cannot unlock the rest. Sites should answer reset requests with one identical message either way.</div>
+</div>
+
+<div class="card">
+  <h2>🎣 Gophish <span class="badge b-phish">BAIT + CAPTURE</span></h2>
+  <p class="tag">Phishing simulation platform · v0.12.1 · verified in this lab</p>
+  <div class="why"><b>How the pros use it:</b> this is the platform companies themselves run, legally, to train staff. It sends the campaign, hosts the landing page, and measures exactly who clicked, who typed credentials, and who reported it. Criminal crews use lookalike platforms for the same reason: phishing is a numbers game and dashboards win it.</div>
+  <div class="how"><b>How it works:</b> a single Go binary with a built-in web server and database. You define a sending profile (SMTP), an email template, a landing page (which can clone a real page and capture the form), and a target group. Every link carries a unique tracking ID, so each click and submission is tied to a person. The admin panel lives on port 3333 and the first launch prints the admin password in the terminal.</div>
+  <h3>▶ Demo commands</h3>
+  <div class="cmd"><span class="c"># start the platform, watch the terminal for the admin password</span>
+bin/gophish
+<span class="c"># then open https://localhost:3333 and log in as admin</span></div>
+  <p><b>What the class should notice:</b> the results page. One convincing email to 100 people, and the dashboard shows a click rate any marketer would envy. That is why this crime scales.</p>
+  <div class="prev"><b>🛡️ Prevention:</b> this is also the cure. Teams that run regular simulations and reward reporting (not punishment) cut their click rates dramatically. As a user: hover or long-press every link, and report suspicious mail instead of just deleting it.</div>
+</div>
+
+<div class="card">
+  <h2>🧰 SET · Social-Engineer Toolkit <span class="badge b-phish">BAIT + CAPTURE</span></h2>
+  <p class="tag">The classic attack framework · TrustedSec · menu verified in this lab</p>
+  <div class="why"><b>How hackers use it:</b> SET is the grandparent of phishing frameworks, shipped with Kali for a decade. Its most famous trick is the Credential Harvester: it clones a real login page in seconds and logs everything typed into it. It also builds malicious files, QR codes and mass-mail campaigns from one menu.</div>
+  <div class="how"><b>How it works:</b> the Site Cloner downloads the target page (HTML, images, styles), rewrites the login form so it POSTs to the attacker's machine instead of the real server, then serves the copy locally. The victim sees a pixel-perfect page. When they submit, SET records every form field to a report and, in the classic flow, redirects them to the real site so nothing feels wrong.</div>
+  <h3>▶ Demo path</h3>
+  <div class="cmd">bin/setoolkit
+<span class="c"># 1) Social-Engineering Attacks</span>
+<span class="c"># 2) Website Attack Vectors</span>
+<span class="c"># 3) Credential Harvester Attack Method</span>
+<span class="c"># 2) Site Cloner, then give it your lab IP and the page to clone</span></div>
+  <p><b>What the class should notice:</b> the clone takes under a minute and needs zero skill. The barrier to this crime is not talent, it is distribution: getting the link in front of the victim.</p>
+  <div class="prev"><b>🛡️ Prevention:</b> the page is perfect, but the address is not. Train the reflex: never log in from a link. Close the message, open the official app, and log in there.</div>
+</div>
+
+<div class="card">
+  <h2>📱 Zphisher <span class="badge b-kit">THE REAL-WORLD KIT</span></h2>
+  <p class="tag">Prebuilt clone-page kit · Instagram and TikTok templates · verified in this lab</p>
+  <div class="why"><b>How hackers use it:</b> this is the kit behind the scams your classmates actually receive: "get 10k free followers", "your account will be deleted, verify now", "blue tick verification". No skill needed: pick Instagram or TikTok from the menu, pick a tunnel, send the link. The kit does the rest, including logging the victim's IP address, browser and typed password.</div>
+  <div class="how"><b>How it works:</b> three simple parts. (1) A folder of static template pages that copy the real login screens, plus bait variants like follower-boost pages. (2) A tiny PHP server that serves the template and writes submitted credentials and the visitor's IP to a file. (3) A tunnel (Cloudflare, ngrok or similar) that gives the attacker's home machine a public link with a trustworthy-looking HTTPS padlock. The padlock only proves the tunnel is encrypted, not that the site is honest.</div>
+  <h3>▶ Demo commands</h3>
+  <div class="cmd">bin/zphisher
+<span class="c"># pick 02 Instagram or 10 TikTok, then 01 localhost for the classroom demo</span>
+<span class="c"># log in on the fake page with the DEMO account, then read the captured file</span></div>
+  <p><b>What the class should notice:</b> two tells survive every kit. The address is never the real domain (it is a tunnel address or a lookalike), and the bait always rushes you: free, urgent, or threatening. Real platforms never DM you a login link.</p>
+  <div class="prev"><b>🛡️ Prevention:</b> turn on two-step verification in the official app, use a password manager (it will refuse to fill your Instagram password on a fake domain, because the domain does not match), and treat every "free followers" offer as a confession that it is a scam.</div>
+</div>
+
+<div class="card">
+  <h2>👑 Evilginx <span class="badge b-aitm">BYPASS · BOSS LEVEL</span></h2>
+  <p class="tag">Adversary-in-the-middle framework · v3.3.0 · verified in this lab</p>
+  <div class="why"><b>How hackers use it:</b> "But I have two-factor authentication." Evilginx is the answer criminals found. The victim does everything right: real page, real password, real 2FA code. It does not matter, because they did it all through the attacker's proxy, and the attacker keeps the one thing that proves the login happened: the session cookie.</div>
+  <div class="how"><b>How it works:</b> Evilginx is a reverse proxy. The victim connects to the attacker's server, which fetches the genuine site in real time, rewrites the domain names in the pages as they pass through, and relays everything both ways. The real site happily completes the password and 2FA checks, then issues session cookies, which the proxy copies as they flow past. The attacker imports those cookies into their own browser and is simply logged in, no password or code needed. A config file called a phishlet defines, per site, which domains to proxy and which cookies to steal.</div>
+  <h3>▶ Demo commands</h3>
+  <div class="cmd">bin/evilginx
+<span class="c"># inside the console:</span>
+<span class="c"># config        → see and set the lab domain</span>
+<span class="c"># phishlets     → list the targets it can proxy</span>
+<span class="c"># lures         → create and inspect the bait links</span></div>
+  <p><b>What the class should notice:</b> the page is not a copy this time, it is the real site, live. Every visual check passes. The only wrong thing is the domain in the address bar, one detail carrying the whole defence.</p>
+  <div class="prev"><b>🛡️ Prevention:</b> one defence truly beats this: <b>passkeys and FIDO2 security keys</b>. They cryptographically bind your login to the real domain, so on a proxy domain the login simply cannot be completed. App codes and SMS codes cannot do this. Turn on passkeys wherever they are offered.</div>
+</div>
+
+<div class="card">
+  <h2>🎬 The 50-minute class demo flow</h2>
+  <table>
+    <tr><th>Act</th><th>Minutes</th><th>What you show</th></tr>
+    <tr><td><b>1 · One username</b></td><td>10</td><td>Sherlock and Maigret on a throwaway demo handle. End with the Maigret report open: "this is what a stranger assembles about you in one minute."</td></tr>
+    <tr><td><b>2 · One email</b></td><td>5</td><td>Holehe on a demo mailbox you own, then theHarvester on example.com. The target list writes itself.</td></tr>
+    <tr><td><b>3 · The kit</b></td><td>15</td><td>Zphisher on localhost, Instagram template. A volunteer logs in with the demo account. Turn the screen: captured password and IP. Then dissect the tells together: the address, the bait, the rush.</td></tr>
+    <tr><td><b>4 · The pro platform</b></td><td>10</td><td>Gophish dashboard and a SET clone. Show that companies run the same play legally to train staff, and that the clone takes a minute.</td></tr>
+    <tr><td><b>5 · The boss level</b></td><td>10</td><td>Evilginx console and the proxy diagram in words: real site, real code, stolen session. Finish on the one fix that works: passkeys.</td></tr>
+  </table>
+  <p class="small">Rehearse every act once before class. Live demos fail on projectors, not on knowledge: test the VM, the network mode and the tunnel the day before.</p>
+</div>
+
+<div class="card">
+  <h2>🔬 Reading a link like a detective</h2>
+  <p>The real domain is the part <b>directly before the first single slash</b> after https://. Everything before it is decoration the attacker controls.</p>
+  <table>
+    <tr><th>Link</th><th>Real domain</th><th>Verdict</th></tr>
+    <tr><td>https://www.instagram.com/login</td><td>instagram.com</td><td>✅ Real</td></tr>
+    <tr><td>https://instagram.com.login-verify.xyz</td><td>login-verify.xyz</td><td>🚫 Fake, subdomain trick</td></tr>
+    <tr><td>https://login.instagram.com@evil-site.net</td><td>evil-site.net</td><td>🚫 Fake, the @ hides the true host</td></tr>
+    <tr><td>https://something.trycloudflare.com</td><td>trycloudflare.com</td><td>🚫 Tunnel, no real brand logs you in here</td></tr>
+    <tr><td>https://instagrarn.com (with an "r n")</td><td>instagrarn.com</td><td>🚫 Lookalike spelling</td></tr>
+  </table>
+  <p><b>Three more tells:</b> the message rushes you (ban, prize, deadline), it arrived where the platform never contacts you (DMs, comments, WhatsApp), and your password manager suddenly refuses to fill the password. That refusal is a fire alarm, not a bug.</p>
+</div>
+
+<div class="card">
+  <h2>🛡️ The master prevention checklist</h2>
+  <ul>
+    <li><b>Passkeys first.</b> Turn them on for Instagram, TikTok, Google, everywhere offered. They are the only common defence that defeats proxy phishing.</li>
+    <li><b>Two-step verification on</b>, app-based where possible. It still stops the cheap kits and stolen password lists.</li>
+    <li><b>Unique password per account</b>, stored in a password manager. The manager doubles as a fake-site detector: no autofill, no trust.</li>
+    <li><b>Never log in from a link in a message.</b> Open the official app yourself. Every time, no exceptions for "urgent" ones, urgency is the tell.</li>
+    <li><b>Read the domain, not the page.</b> Pages can be copied perfectly in a minute. Domains cannot be borrowed.</li>
+    <li><b>Shrink your public footprint.</b> Private personal accounts, different handles for important accounts, and run Sherlock on yourself once a semester.</li>
+    <li><b>Check active sessions</b> in the app settings after any scare, and log out everything you do not recognise.</li>
+    <li><b>Report, do not just delete.</b> Reporting a phishing page gets it taken down for the next victim.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>📂 Your lab, on disk</h2>
+  <p>Everything lives in <code>~/workspace/offsec-tools/social-engineering</code> with one-command launchers in the <code>bin</code> folder: <code>sherlock</code>, <code>maigret</code>, <code>theharvester</code>, <code>holehe</code>, <code>gophish</code>, <code>setoolkit</code>, <code>zphisher</code>, <code>evilginx</code>. The same arsenal installs on your Kali VM with <code>scripts/kali-setup.sh</code> (SET comes from the Kali package there; Zphisher is a manual clone of its public repo).</p>
+  <p class="small">Versions verified running on 2026-10-12: Sherlock 0.16.2, Maigret 0.6.6, theHarvester 4.11.1, Gophish 0.12.1, Evilginx 3.3.0, SET latest, Zphisher latest with PHP 8.3.13.</p>
+</div>
+
+<footer>Social Engineering Lab · built for Izaz (The PenTrix) · teach the attack, master the defence 🎓</footer>
+</div>
+</body>
+</html>
