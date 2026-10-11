@@ -12,7 +12,7 @@
 # ============================================================
 set -uo pipefail
 
-VERSION="1.0.0"
+VERSION="1.0.1"
 ARSENAL="$HOME/se-arsenal"
 BIN="$ARSENAL/bin"
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; CYAN='\033[0;36m'; NC='\033[0m'
@@ -45,14 +45,14 @@ echo "  Python: $PYV"
 python3 -c 'import sys; exit(0 if sys.version_info >= (3,12) else 1)' || \
   echo "  WARNING: theHarvester needs Python 3.12+. Ubuntu 24.04 is the safe choice."
 
-mkvenv(){ [ -d "$1" ] || python3 -m venv "$1"; "$1/bin/pip" install -q --upgrade pip; }
+mkvenv(){ [ -d "$1" ] || python3 -m venv "$1"; "$1/bin/pip" install -q --prefer-binary --upgrade pip; }
 
 # pip tool:  pypkg <name> <pip-package> <binary>
 pypkg(){
   local name="$1" pkg="$2" binname="${3:-$1}"
   step "$name"
   mkvenv "$ARSENAL/osint/venv-$name"
-  if "$ARSENAL/osint/venv-$name/bin/pip" install -q "$pkg" && [ -x "$ARSENAL/osint/venv-$name/bin/$binname" ]; then
+  if "$ARSENAL/osint/venv-$name/bin/pip" install -q --prefer-binary "$pkg" && [ -x "$ARSENAL/osint/venv-$name/bin/$binname" ]; then
     printf '#!/usr/bin/env bash\nexec %s/osint/venv-%s/bin/%s "$@"\n' "$ARSENAL" "$name" "$binname" > "$BIN/$binname"
     chmod +x "$BIN/$binname"; ok "$name"
   else bad "$name"; fi
@@ -66,13 +66,34 @@ pypkg nexfil     nexfil           nexfil        # username search, 300+ sites, v
 
 step "holehe (email account checker)"
 mkvenv "$ARSENAL/osint/venv-holehe"
-if "$ARSENAL/osint/venv-holehe/bin/pip" install -q holehe; then
+if "$ARSENAL/osint/venv-holehe/bin/pip" install -q --prefer-binary holehe; then
   printf '#!/usr/bin/env bash\nexec env -u NO_PROXY -u no_proxy %s/osint/venv-holehe/bin/holehe "$@"\n' "$ARSENAL" > "$BIN/holehe"
   chmod +x "$BIN/holehe"; ok "holehe"
 else bad "holehe"; fi
 
 pypkg h8mail     h8mail           h8mail        # breached-email OSINT
-pypkg ghunt      ghunt            ghunt         # Google account OSINT (one-time setup: ghunt login)
+step "ghunt (Google account OSINT, one-time setup afterwards: ghunt login)"
+# GHunt pins Pillow <11. Pillow 10.x ships no wheels for Python 3.13+ and its
+# C code cannot build there, so on modern Pythons GHunt gets a dedicated
+# Python 3.12 environment, fetched by uv. On Python 3.12 systems it installs
+# the normal way.
+GV="$ARSENAL/osint/venv-ghunt"
+if python3 -c 'import sys; exit(0 if sys.version_info >= (3,13) else 1)'; then
+  export PATH="$HOME/.local/bin:$PATH"
+  command -v uv > /dev/null 2>&1 || curl -sSf https://astral.sh/uv/install.sh | sh > /dev/null 2>&1
+  rm -rf "$GV"
+  if command -v uv > /dev/null 2>&1 && uv venv --python 3.12 "$GV" > /dev/null 2>&1 && \
+     uv pip install -q --python "$GV/bin/python" ghunt && [ -x "$GV/bin/ghunt" ]; then
+    printf '#!/usr/bin/env bash\nexec %s/osint/venv-ghunt/bin/ghunt "$@"\n' "$ARSENAL" > "$BIN/ghunt"
+    chmod +x "$BIN/ghunt"; ok "ghunt (dedicated Python 3.12 env)"
+  else bad "ghunt"; fi
+else
+  mkvenv "$GV"
+  if "$GV/bin/pip" install -q --prefer-binary ghunt && [ -x "$GV/bin/ghunt" ]; then
+    printf '#!/usr/bin/env bash\nexec %s/osint/venv-ghunt/bin/ghunt "$@"\n' "$ARSENAL" > "$BIN/ghunt"
+    chmod +x "$BIN/ghunt"; ok "ghunt"
+  else bad "ghunt"; fi
+fi
 
 # ---------------- Instagram, TikTok, media ----------------
 pypkg instaloader instaloader     instaloader   # Instagram profiles, posts, stories metadata
@@ -83,7 +104,7 @@ pypkg gallery-dl  gallery-dl      gallery-dl    # gallery downloader for IG, Tik
 
 step "TikTokApi (Python library for TikTok data)"
 mkvenv "$ARSENAL/osint/venv-tiktokapi"
-if "$ARSENAL/osint/venv-tiktokapi/bin/pip" install -q TikTokApi && \
+if "$ARSENAL/osint/venv-tiktokapi/bin/pip" install -q --prefer-binary TikTokApi && \
    "$ARSENAL/osint/venv-tiktokapi/bin/python" -c "import TikTokApi"; then
   "$ARSENAL/osint/venv-tiktokapi/bin/python" -m playwright install chromium > /dev/null 2>&1 || \
     echo "  Note: if needed later: ~/se-arsenal/osint/venv-tiktokapi/bin/python -m playwright install chromium"
@@ -96,7 +117,7 @@ gitpkg(){ # gitpkg <name> <repo-url> <dest-under-arsenal> <main-file>
   step "$name"
   [ -d "$ARSENAL/$dest" ] || git clone --depth 1 -q "$url" "$ARSENAL/$dest"
   mkvenv "$ARSENAL/venv-$name"
-  [ -f "$ARSENAL/$dest/requirements.txt" ] && "$ARSENAL/venv-$name/bin/pip" install -q -r "$ARSENAL/$dest/requirements.txt"
+  [ -f "$ARSENAL/$dest/requirements.txt" ] && "$ARSENAL/venv-$name/bin/pip" install -q --prefer-binary -r "$ARSENAL/$dest/requirements.txt"
   if [ -f "$ARSENAL/$dest/$main" ]; then
     printf '#!/usr/bin/env bash\ncd %s/%s && exec %s/venv-%s/bin/python %s "$@"\n' "$ARSENAL" "$dest" "$ARSENAL" "$name" "$main" > "$BIN/$name"
     chmod +x "$BIN/$name"; ok "$name"
@@ -107,7 +128,7 @@ step "theHarvester 4.11.1 (source build; the PyPI package is a dead stub)"
 [ -d "$ARSENAL/osint/theharvester-src" ] || \
   git clone --depth 1 -q --branch 4.11.1 https://github.com/laramies/theHarvester "$ARSENAL/osint/theharvester-src"
 mkvenv "$ARSENAL/osint/venv-harvester"
-if "$ARSENAL/osint/venv-harvester/bin/pip" install -q "$ARSENAL/osint/theharvester-src" && [ -x "$ARSENAL/osint/venv-harvester/bin/theHarvester" ]; then
+if "$ARSENAL/osint/venv-harvester/bin/pip" install -q --prefer-binary "$ARSENAL/osint/theharvester-src" && [ -x "$ARSENAL/osint/venv-harvester/bin/theHarvester" ]; then
   printf '#!/usr/bin/env bash\nexec %s/osint/venv-harvester/bin/theHarvester "$@"\n' "$ARSENAL" > "$BIN/theharvester"
   chmod +x "$BIN/theharvester"; ok "theHarvester"
 else bad "theHarvester"; fi
@@ -152,7 +173,7 @@ if [ ! -d "$ARSENAL/phishing/set" ]; then
   tar xzf /tmp/set.tar.gz -C /tmp && mv /tmp/social-engineer-toolkit-master "$ARSENAL/phishing/set"; rm -f /tmp/set.tar.gz
 fi
 mkvenv "$ARSENAL/venv-set"
-"$ARSENAL/venv-set/bin/pip" install -q -r "$ARSENAL/phishing/set/requirements.txt"
+"$ARSENAL/venv-set/bin/pip" install -q --prefer-binary -r "$ARSENAL/phishing/set/requirements.txt"
 printf '#!/usr/bin/env bash\ncd %s/phishing/set && exec %s/venv-set/bin/python setoolkit "$@"\n' "$ARSENAL" "$ARSENAL" > "$BIN/setoolkit"; chmod +x "$BIN/setoolkit"
 [ -f "$ARSENAL/phishing/set/setoolkit" ] && ok "setoolkit" || bad "setoolkit"
 
@@ -171,7 +192,7 @@ clonesh camphish https://github.com/techchipnet/CamPhish camphish.sh  # camera-a
 step "seeker (precise location harvesting via a link)"
 [ -d "$ARSENAL/phishing/seeker" ] || git clone --depth 1 -q https://github.com/thewhiteh4t/seeker "$ARSENAL/phishing/seeker"
 mkvenv "$ARSENAL/venv-seeker"
-[ -f "$ARSENAL/phishing/seeker/requirements.txt" ] && "$ARSENAL/venv-seeker/bin/pip" install -q -r "$ARSENAL/phishing/seeker/requirements.txt"
+[ -f "$ARSENAL/phishing/seeker/requirements.txt" ] && "$ARSENAL/venv-seeker/bin/pip" install -q --prefer-binary -r "$ARSENAL/phishing/seeker/requirements.txt"
 if [ -f "$ARSENAL/phishing/seeker/seeker.py" ]; then
   printf '#!/usr/bin/env bash\ncd %s/phishing/seeker && exec %s/venv-seeker/bin/python seeker.py "$@"\n' "$ARSENAL" "$ARSENAL" > "$BIN/seeker"
   chmod +x "$BIN/seeker"; ok "seeker"
@@ -249,7 +270,7 @@ case "${1:-help}" in
     else echo "Cancelled."; fi
     ;;
   *)
-    echo "se-arsenal · v${VERSION:-1.0.0}"
+    echo "se-arsenal · v${VERSION:-1.0.1}"
     echo "Usage: se-arsenal <list|check|update|remove>"
     ;;
 esac

@@ -8,7 +8,7 @@
 
 ![Tools](https://img.shields.io/badge/tools-30%2B-red?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-WSL%20·%20Ubuntu%2024.04%20·%20Kali-blue?style=for-the-badge)
-![Version](https://img.shields.io/badge/version-1.0.0-green?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-1.0.1-green?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-yellow?style=for-the-badge)
 
 </div>
@@ -36,7 +36,7 @@ evilginx
 
 ## 🔥 Why SE-Arsenal
 
-- **It actually finishes.** Every tool source was verified live before being pinned here, and the famous traps are already disarmed: the dead PyPI theHarvester stub, the Python version cliff, the Holehe startup crash, the missing PHP runtime.
+- **It actually finishes.** Every tool source was verified live before being pinned here, and the famous traps are already disarmed: the dead PyPI theHarvester stub, the Python version cliff, the Holehe startup crash, the missing PHP runtime, and the GHunt Pillow pin that cannot build on Python 3.14 (GHunt automatically gets a dedicated Python 3.12 environment on modern systems).
 - **Zero dependency wars.** Each Python tool lives in its own venv. Tools can never break each other, and `se-arsenal remove` wipes the slate clean.
 - **Curated, not dumped.** 30+ tools chosen because they are the best at their job right now, organized by the real attack chain: recon, profiling, lure, capture, session theft.
 - **Platform-first.** The deepest coverage goes where the attacks actually happen: TikTok, Instagram and Snapchat.
