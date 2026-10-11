@@ -1,70 +1,108 @@
-# 🎭 SE Lab · Social Engineering Arsenal
+<div align="center">
 
-**One script installs 30+ social engineering tools on WSL**, focused on **TikTok, Instagram and Snapchat**, plus the full attack chain around them: recon, profiling, phishing kits, and the AiTM frameworks that beat two-factor codes.
+# 🎭 SE-ARSENAL
 
-Built for classroom demonstration and isolated lab practice: how hackers use these tools, how they work, and how to stop them.
+### The social engineering arsenal that installs itself
 
-![Platform](https://img.shields.io/badge/platform-WSL%20%7C%20Ubuntu%2024.04%20%7C%20Kali-blue)
-![Tools](https://img.shields.io/badge/tools-30%2B-red)
-![Use](https://img.shields.io/badge/use-lab%20%2F%20class%20demo%20only-green)
+**30+ battle-tested tools for TikTok, Instagram and Snapchat research, phishing infrastructure and AiTM session attacks. One command. Zero dependency wars.**
 
-## 🚀 Install (one command, does everything itself)
+![Tools](https://img.shields.io/badge/tools-30%2B-red?style=for-the-badge)
+![Platform](https://img.shields.io/badge/platform-WSL%20·%20Ubuntu%2024.04%20·%20Kali-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-1.0.0-green?style=for-the-badge)
+![License](https://img.shields.io/badge/license-MIT-yellow?style=for-the-badge)
+
+</div>
+
+---
+
+## ⚡ Quick start
 
 ```bash
-git clone https://github.com/mizazhaider-ceh/se-lab.git
-cd se-lab && bash install.sh
+git clone https://github.com/mizazhaider-ceh/SE-Arsenal.git
+cd SE-Arsenal && bash install.sh
 ```
 
-Use **Ubuntu 24.04** WSL (it ships Python 3.12, which theHarvester needs). Kali WSL also works and unlocks 2 extra tools. The script builds a clean lab at `~/se-lab`, gives every tool its own venv, adds one-command launchers to your PATH, and ends with a pass/fail report. Re-running it is safe.
+That is the whole setup. The installer builds everything into `~/se-arsenal`, gives every tool its own isolated environment, puts a launcher for each tool on your PATH, installs the `se-arsenal` manager command, and finishes with a full status report. Re-running it is safe: finished steps are skipped, broken ones are retried.
 
-## 🏆 The best tool per job (start here)
+Then open a new terminal and go:
 
-| Job | Use this | Why it wins |
+```bash
+se-arsenal list        # see your arsenal
+sherlock --site Instagram --site TikTok <handle>
+maigret <handle>
+zphisher
+evilginx
+```
+
+## 🔥 Why SE-Arsenal
+
+- **It actually finishes.** Every tool source was verified live before being pinned here, and the famous traps are already disarmed: the dead PyPI theHarvester stub, the Python version cliff, the Holehe startup crash, the missing PHP runtime.
+- **Zero dependency wars.** Each Python tool lives in its own venv. Tools can never break each other, and `se-arsenal remove` wipes the slate clean.
+- **Curated, not dumped.** 30+ tools chosen because they are the best at their job right now, organized by the real attack chain: recon, profiling, lure, capture, session theft.
+- **Platform-first.** The deepest coverage goes where the attacks actually happen: TikTok, Instagram and Snapchat.
+
+## 🏆 Best in class
+
+| Mission | Tool | Why it wins |
 |---|---|---|
-| Username hunt | **Maigret** | 3000+ sites, extracts profile data and interests, writes reports |
-| Fast username check | **Blackbird** | 600+ sites, username and email, very quick |
-| Instagram deep dive | **Osintgram** + **Toutatis** | Interactive IG OSINT shell plus account info from a username |
-| Instagram downloads | **Instaloader** | The maintained standard, profiles, posts, metadata |
-| TikTok data | **TikTokApi** + **yt-dlp** | Library for profiles and videos, yt-dlp for bulletproof downloads |
-| Email footprint | **Holehe** | Shows where an email is registered, via forgot-password flows |
-| Phishing simulation | **Gophish** | The professional platform, campaigns, tracking, dashboards |
-| Clone-page scams | **Zphisher** | The real-world kit behind "free followers" scams, IG + TikTok templates |
-| Beating 2FA codes | **Evilginx** | AiTM proxy steals the session cookie after the real login |
-| Location demo | **Seeker** | Shows how one link click leaks precise GPS location |
+| Username hunting | **Maigret** | 3000+ sites, extracts profile data, interests and linked accounts, writes reports |
+| Rapid username sweep | **Blackbird** | 600+ sites, username and email, extremely fast |
+| Instagram intelligence | **Osintgram** + **Toutatis** | Interactive OSINT shell plus account intel from a bare username |
+| Instagram archiving | **Instaloader** | The maintained standard for profiles, posts and metadata |
+| TikTok data | **TikTokApi** + **yt-dlp** | Full profile and video data library, bulletproof downloading |
+| Email footprinting | **Holehe** | Reveals where an email is registered, straight from forgot-password flows |
+| Phishing campaigns | **Gophish** | The professional platform: sending profiles, tracking, live dashboards |
+| Clone-page kits | **Zphisher** | The kit behind real "free followers" scams, 30+ templates incl. Instagram and TikTok |
+| Defeating OTP codes | **Evilginx** | AiTM reverse proxy: the victim logs in for real, you keep the session cookie |
+| Location harvesting | **Seeker** | One clicked link returns precise GPS coordinates |
 
-## 📱 Platform coverage
+## 📱 Platform focus
 
-- **TikTok:** Sherlock, Maigret, Blackbird, SocialScan and Nexfil check usernames. TikTokApi pulls profile and video data. yt-dlp and gallery-dl download. Zphisher has the TikTok clone templates used in real scams.
-- **Instagram:** the richest target set. Osintgram, Toutatis, Ignorant, Instaloader, Holehe, plus every username tool and the Zphisher / CamPhish kits.
-- **Snapchat:** honest truth, Snapchat is a closed platform, so no serious open-source Snapchat OSINT tool exists. What does work: username existence checks in Maigret, Blackbird, Sherlock and SocialScan, which is exactly how attackers test whether a handle is taken there too.
+**TikTok** · Username checks across Sherlock, Maigret, Blackbird, SocialScan and Nexfil. TikTokApi for profile and video intelligence. yt-dlp and gallery-dl for archiving. Zphisher carries the TikTok lure templates seen in live scams.
 
-## 🧰 Full tool list
+**Instagram** · The richest target set: Osintgram, Toutatis, Ignorant, Instaloader and Holehe, every username engine, and the Zphisher and CamPhish lure kits.
 
-**Recon and OSINT (19):** Sherlock · Maigret · Blackbird · SocialScan · Nexfil · Holehe · theHarvester · h8mail · GHunt · Osintgram · Toutatis · Ignorant · Instaloader · TikTokApi · yt-dlp · gallery-dl · Photon · SpiderFoot · PhoneInfoga
+**Snapchat** · Straight talk: Snapchat is a closed platform and no serious dedicated Snapchat OSINT tool exists. What works, and what this arsenal ships, is username existence checking through Maigret, Blackbird, Sherlock and SocialScan, the same first step real operators use to map a target's cross-platform identity.
 
-**Phishing and capture (8):** Gophish · SET (Social-Engineer Toolkit) · Zphisher · Evilginx · Modlishka (optional build) · CamPhish · Seeker · MaskPhish
+## 🧰 The full arsenal
 
-**Profiling and support (3):** Cupp (password profiler) · Nmap · Kali extras on Kali WSL: Recon-ng and BeEF
+**Recon and OSINT (19)** · Sherlock · Maigret · Blackbird · SocialScan · Nexfil · Holehe · theHarvester · h8mail · GHunt · Osintgram · Toutatis · Ignorant · Instaloader · TikTokApi · yt-dlp · gallery-dl · Photon · SpiderFoot · PhoneInfoga
 
-## 📂 What gets built on your machine
+**Phishing and capture (8)** · Gophish · SET · Zphisher · Evilginx · Modlishka (optional source build) · CamPhish · Seeker · MaskPhish
+
+**Profiling and support (3+)** · Cupp · Nmap · Kali systems get Recon-ng and BeEF automatically
+
+## 🕹️ The se-arsenal command
+
+```bash
+se-arsenal list     # every installed tool, grouped by mission
+se-arsenal check    # health check: what is ready, what is missing
+se-arsenal update   # pull the newest SE-Arsenal and rebuild
+se-arsenal remove   # clean uninstall, PATH entry included
+```
+
+## 📂 Layout on your machine
 
 ```
-~/se-lab/
-├── bin/          one-command launchers for every tool
-├── osint/        recon tools, one venv each
-├── phishing/     gophish, evilginx, set, zphisher, camphish, seeker
-├── scripts/      installer copy and helpers
-├── guide/        the HTML guides
-└── work/         your demo outputs and reports
+~/se-arsenal/
+├── bin/          one-command launcher for every tool + the se-arsenal manager
+├── osint/        recon tools, one isolated venv each
+├── phishing/     gophish · evilginx · set · zphisher · camphish · seeker
+└── work/         your outputs, reports and captures
 ```
 
-## 📖 Guides (in the `guide` folder)
+## 📋 Requirements
 
-- **wsl-setup-guide.html**: the setup explained step by step, folder logic, the five install traps and their fixes
-- **class-demo-guide.html**: the 50-minute class demo, per tool how hackers use it, how it works, and the prevention for each, plus a link-reading masterclass and prevention checklist
+- Windows with **WSL2**, running **Ubuntu 24.04** (recommended, ships Python 3.12) or **Kali**
+- A few GB of free space, an internet connection, and sudo rights inside WSL
+- Kali systems unlock the two extra tools automatically
 
-## ⚠️ Lab rules
+## ⚖️ Responsible use
 
-Demo accounts you own. Isolated practice. Never real people. The same tools aimed at strangers are a crime; the defence half of every demo matters as much as the attack half.
+SE-Arsenal is a professional toolkit for **authorized security research, red team operations and education**. Every capability in it is dual-use. Only ever point it at systems and accounts you own or are explicitly authorized to test. Unauthorized use is illegal in most jurisdictions, including Belgium and the EU.
 
-*Built by The PenTrix · versions verified live on 2026-10-12: Sherlock 0.16.2, Maigret 0.6.6, theHarvester 4.11.1, Gophish 0.12.1, Evilginx 3.3.0, SocialScan 2.0.1, Toutatis 1.31, TikTokApi 7.3.3, Instaloader 4.15.3 and the rest pinned in `install.sh`.*
+## 👤 Author
+
+Built and maintained by **Muhammad Izaz Haider**, The PenTrix · penetration tester and offensive security researcher.
+
+*Pinned versions, verified live on 2026-10-12: Sherlock 0.16.2 · Maigret 0.6.6 · theHarvester 4.11.1 · Gophish 0.12.1 · Evilginx 3.3.0 · SocialScan 2.0.1 · Toutatis 1.31 · Ignorant 1.2 · TikTokApi 7.3.3 · Instaloader 4.15.3 · PhoneInfoga 2.11.0 · GHunt 2.3.4 · h8mail 2.5.6*
