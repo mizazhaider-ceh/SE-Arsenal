@@ -8,7 +8,7 @@
 
 ![Tools](https://img.shields.io/badge/tools-30%2B-red?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-WSL%20·%20Ubuntu%2024.04%20·%20Kali-blue?style=for-the-badge)
-![Version](https://img.shields.io/badge/version-1.0.2-green?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-1.1.0-green?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-yellow?style=for-the-badge)
 
 </div>
@@ -22,7 +22,7 @@ git clone https://github.com/mizazhaider-ceh/SE-Arsenal.git
 cd SE-Arsenal && bash install.sh
 ```
 
-That is the whole setup. The installer builds everything into `~/se-arsenal`, gives every tool its own isolated environment, puts a launcher for each tool on your PATH, installs the `se-arsenal` manager command, and finishes with a full status report. Re-running it is safe: finished steps are skipped, broken ones are retried.
+That is the whole setup. The installer builds everything into `~/se-arsenal`, gives every tool its own isolated environment, puts a launcher for each tool on your PATH, installs the `se-arsenal` manager command, and finishes with a full status report plus built-in smoke tests that prove every tool actually answers. Re-running it is safe: finished steps are skipped, broken ones are retried. Advanced: `bash install.sh --skip-apt` reuses your system packages untouched.
 
 Then open a new terminal and go:
 
@@ -47,7 +47,7 @@ evilginx
 |---|---|---|
 | Username hunting | **Maigret** | 3000+ sites, extracts profile data, interests and linked accounts, writes reports |
 | Rapid username sweep | **Blackbird** | 600+ sites, username and email, extremely fast |
-| Instagram intelligence | **Osintgram** + **Toutatis** | Interactive OSINT shell plus account intel from a bare username |
+| Instagram intelligence | **Osintgram** + **Toutatis** | Deep Instagram OSINT in a local web app, plus account intel from a bare username |
 | Instagram archiving | **Instaloader** | The maintained standard for profiles, posts and metadata |
 | TikTok data | **TikTokApi** + **yt-dlp** | Full profile and video data library, bulletproof downloading |
 | Email footprinting | **Holehe** | Reveals where an email is registered, straight from forgot-password flows |
@@ -62,7 +62,7 @@ evilginx
 
 **Instagram** · The richest target set: Osintgram, Toutatis, Ignorant, Instaloader and Holehe, every username engine, and the Zphisher and CamPhish lure kits.
 
-**Snapchat** · Straight talk: Snapchat is a closed platform and no serious dedicated Snapchat OSINT tool exists. What works, and what this arsenal ships, is username existence checking through Maigret, Blackbird, Sherlock and SocialScan, the same first step real operators use to map a target's cross-platform identity.
+**Snapchat** · Straight talk: Snapchat is a closed platform and no serious dedicated Snapchat OSINT tool exists. What works, and what this arsenal ships, is the two checks real operators start with: username existence through Maigret, Blackbird, Sherlock and SocialScan, and phone-number registration checks through Ignorant, which covers Snapchat directly.
 
 ## 🧰 The full arsenal
 

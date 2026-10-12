@@ -12,18 +12,25 @@
 # ============================================================
 set -uo pipefail
 
-VERSION="1.0.2"
+VERSION="1.1.0"
 ARSENAL="$HOME/se-arsenal"
 BIN="$ARSENAL/bin"
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; CYAN='\033[0;36m'; NC='\033[0m'
 PASS=(); FAIL=()
 
-if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
-  echo "SE-Arsenal installer v$VERSION"
-  echo "Installs 30+ social engineering tools into $ARSENAL"
-  echo "Usage: bash install.sh    (safe to re-run; finishes with a full status report)"
-  exit 0
-fi
+SKIP_APT=0
+for a in "$@"; do
+  case "$a" in
+    --skip-apt) SKIP_APT=1 ;;
+    --help|-h)
+      echo "SE-Arsenal installer v$VERSION"
+      echo "Installs 30+ social engineering tools into $ARSENAL"
+      echo "Usage: bash install.sh [--skip-apt]"
+      echo "  (safe to re-run; finishes with install + smoke-test reports)"
+      echo "  --skip-apt: do not touch system packages (they must already exist)"
+      exit 0 ;;
+  esac
+done
 
 echo -e "${CYAN}SE-ARSENAL v$VERSION${NC} · social engineering arsenal installer"
 echo "Target: $ARSENAL"
@@ -34,11 +41,15 @@ bad(){ FAIL+=("$1"); echo -e "${RED}  FAILED: $1 (continuing with the rest)${NC}
 
 mkdir -p "$ARSENAL/osint" "$ARSENAL/phishing" "$BIN" "$ARSENAL/work"
 
-step "Base system packages"
-sudo apt-get update -qq
-sudo apt-get install -y -qq git curl wget unzip jq nmap python3 python3-venv \
-  python3-pip php-cli build-essential libffi-dev libssl-dev pkg-config > /dev/null \
-  && ok "base packages (incl. nmap, php-cli)" || bad "base packages"
+if [ $SKIP_APT -eq 0 ]; then
+  step "Base system packages"
+  sudo apt-get update -qq
+  sudo apt-get install -y -qq git curl wget unzip jq nmap python3 python3-venv \
+    python3-pip php-cli build-essential libffi-dev libssl-dev pkg-config > /dev/null \
+    && ok "base packages (incl. nmap, php-cli)" || bad "base packages"
+else
+  step "Base system packages SKIPPED (--skip-apt)"
+fi
 
 PYV=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 echo "  Python: $PYV"
@@ -48,12 +59,18 @@ python3 -c 'import sys; exit(0 if sys.version_info >= (3,12) else 1)' || \
 mkvenv(){ [ -d "$1" ] || python3 -m venv "$1"; "$1/bin/pip" install -q --prefer-binary --upgrade pip; }
 
 # pip tool:  pypkg <name> <pip-package> <binary>
-pypkg(){
-  local name="$1" pkg="$2" binname="${3:-$1}"
+pypkg(){ # pypkg <name> <pip-package(s)> <binary> [shield]
+  local name="$1" pkg="$2" binname="${3:-$1}" shield="${4:-}"
   step "$name"
   mkvenv "$ARSENAL/osint/venv-$name"
-  if "$ARSENAL/osint/venv-$name/bin/pip" install -q --prefer-binary "$pkg" && [ -x "$ARSENAL/osint/venv-$name/bin/$binname" ]; then
-    printf '#!/usr/bin/env bash\nexec %s/osint/venv-%s/bin/%s "$@"\n' "$ARSENAL" "$name" "$binname" > "$BIN/$binname"
+  if "$ARSENAL/osint/venv-$name/bin/pip" install -q --prefer-binary $pkg && [ -x "$ARSENAL/osint/venv-$name/bin/$binname" ]; then
+    if [ "$shield" = "shield" ]; then
+      # httpx-based tools choke on malformed NO_PROXY lists found on some
+      # systems; their launchers run with those variables stripped.
+      printf '#!/usr/bin/env bash\nexec env -u NO_PROXY -u no_proxy %s/osint/venv-%s/bin/%s "$@"\n' "$ARSENAL" "$name" "$binname" > "$BIN/$binname"
+    else
+      printf '#!/usr/bin/env bash\nexec %s/osint/venv-%s/bin/%s "$@"\n' "$ARSENAL" "$name" "$binname" > "$BIN/$binname"
+    fi
     chmod +x "$BIN/$binname"; ok "$name"
   else bad "$name"; fi
 }
@@ -80,25 +97,33 @@ step "ghunt (Google account OSINT, one-time setup afterwards: ghunt login)"
 GV="$ARSENAL/osint/venv-ghunt"
 if python3 -c 'import sys; exit(0 if sys.version_info >= (3,13) else 1)'; then
   export PATH="$HOME/.local/bin:$PATH"
-  command -v uv > /dev/null 2>&1 || curl -sSf https://astral.sh/uv/install.sh | sh > /dev/null 2>&1
+  UVBIN="$(command -v uv || true)"
+  if [ -z "$UVBIN" ]; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh > /dev/null 2>&1
+    UVBIN="$(command -v uv || true)"
+  fi
+  if [ -z "$UVBIN" ]; then
+    python3 -m venv "$ARSENAL/.uvboot" > /dev/null 2>&1 && \
+      "$ARSENAL/.uvboot/bin/pip" install -q uv > /dev/null 2>&1 && UVBIN="$ARSENAL/.uvboot/bin/uv"
+  fi
   rm -rf "$GV"
-  if command -v uv > /dev/null 2>&1 && uv venv --python 3.12 "$GV" > /dev/null 2>&1 && \
-     uv pip install -q --python "$GV/bin/python" ghunt && [ -x "$GV/bin/ghunt" ]; then
-    printf '#!/usr/bin/env bash\nexec %s/osint/venv-ghunt/bin/ghunt "$@"\n' "$ARSENAL" > "$BIN/ghunt"
+  if [ -n "$UVBIN" ] && "$UVBIN" venv --python 3.12 "$GV" > /dev/null 2>&1 && \
+     "$UVBIN" pip install -q --python "$GV/bin/python" ghunt && [ -x "$GV/bin/ghunt" ]; then
+    printf '#!/usr/bin/env bash\nexec env -u NO_PROXY -u no_proxy %s/osint/venv-ghunt/bin/ghunt "$@"\n' "$ARSENAL" > "$BIN/ghunt"
     chmod +x "$BIN/ghunt"; ok "ghunt (dedicated Python 3.12 env)"
   else bad "ghunt"; fi
 else
   mkvenv "$GV"
   if "$GV/bin/pip" install -q --prefer-binary ghunt && [ -x "$GV/bin/ghunt" ]; then
-    printf '#!/usr/bin/env bash\nexec %s/osint/venv-ghunt/bin/ghunt "$@"\n' "$ARSENAL" > "$BIN/ghunt"
+    printf '#!/usr/bin/env bash\nexec env -u NO_PROXY -u no_proxy %s/osint/venv-ghunt/bin/ghunt "$@"\n' "$ARSENAL" > "$BIN/ghunt"
     chmod +x "$BIN/ghunt"; ok "ghunt"
   else bad "ghunt"; fi
 fi
 
 # ---------------- Instagram, TikTok, media ----------------
 pypkg instaloader instaloader     instaloader   # Instagram profiles, posts, stories metadata
-pypkg toutatis    toutatis        toutatis      # Instagram account info from a username
-pypkg ignorant    ignorant        ignorant      # is this email registered on Instagram and more
+pypkg toutatis    "toutatis colorama requests" toutatis  # Instagram info from a username (upstream forgets 2 deps, added here)
+pypkg ignorant    ignorant        ignorant      shield   # is this phone number registered on Snapchat, Instagram and more
 pypkg yt-dlp      yt-dlp          yt-dlp        # TikTok + Instagram media downloader
 pypkg gallery-dl  gallery-dl      gallery-dl    # gallery downloader for IG, TikTok and more
 
@@ -134,7 +159,18 @@ if "$ARSENAL/osint/venv-harvester/bin/pip" install -q --prefer-binary "$ARSENAL/
 else bad "theHarvester"; fi
 
 gitpkg blackbird https://github.com/p1ngul1n0/blackbird osint/blackbird blackbird.py     # username + email, 600+ sites
-gitpkg osintgram https://github.com/Datalux/Osintgram  osint/osintgram main.py          # Instagram OSINT shell
+
+step "osintgram (Instagram OSINT, now a local web app)"
+# Upstream rewrote Osintgram: the old main.py shell is gone, it is now a
+# FastAPI web app served by uvicorn on 127.0.0.1:8000.
+[ -d "$ARSENAL/osint/osintgram" ] || git clone --depth 1 -q https://github.com/Datalux/Osintgram "$ARSENAL/osint/osintgram"
+mkvenv "$ARSENAL/venv-osintgram"
+"$ARSENAL/venv-osintgram/bin/pip" install -q --prefer-binary -r "$ARSENAL/osint/osintgram/requirements.txt"
+if [ -f "$ARSENAL/osint/osintgram/src/web/app.py" ]; then
+  printf '#!/usr/bin/env bash\ncd %s/osint/osintgram && exec %s/venv-osintgram/bin/uvicorn src.web.app:app --host 127.0.0.1 --port 8000\n' "$ARSENAL" "$ARSENAL" > "$BIN/osintgram"
+  chmod +x "$BIN/osintgram"; ok "osintgram (web app: http://127.0.0.1:8000)"
+else bad "osintgram"; fi
+
 gitpkg photon    https://github.com/s0md3v/Photon      osint/photon    photon.py        # web OSINT crawler
 gitpkg spiderfoot https://github.com/smicallef/spiderfoot osint/spiderfoot sf.py       # OSINT automation, web UI on 127.0.0.1:5001
 
@@ -192,6 +228,8 @@ clonesh camphish https://github.com/techchipnet/CamPhish camphish.sh  # camera-a
 step "seeker (precise location harvesting via a link)"
 [ -d "$ARSENAL/phishing/seeker" ] || git clone --depth 1 -q https://github.com/thewhiteh4t/seeker "$ARSENAL/phishing/seeker"
 mkvenv "$ARSENAL/venv-seeker"
+# Seeker ships no requirements.txt; its imports are requests + packaging.
+"$ARSENAL/venv-seeker/bin/pip" install -q --prefer-binary requests packaging
 [ -f "$ARSENAL/phishing/seeker/requirements.txt" ] && "$ARSENAL/venv-seeker/bin/pip" install -q --prefer-binary -r "$ARSENAL/phishing/seeker/requirements.txt"
 if [ -f "$ARSENAL/phishing/seeker/seeker.py" ]; then
   printf '#!/usr/bin/env bash\ncd %s/phishing/seeker && exec %s/venv-seeker/bin/python seeker.py "$@"\n' "$ARSENAL" "$ARSENAL" > "$BIN/seeker"
@@ -214,17 +252,46 @@ else bad "maskphish"; fi
 
 step "Modlishka (optional AiTM proxy, built from source with Go)"
 if [ ! -x "$BIN/modlishka" ]; then
-  sudo apt-get install -y -qq golang-go > /dev/null 2>&1
+  [ $SKIP_APT -eq 0 ] && sudo apt-get install -y -qq golang-go > /dev/null 2>&1
   [ -d /tmp/modlishka-src ] || git clone --depth 1 -q https://github.com/drk1wi/Modlishka /tmp/modlishka-src
   (cd /tmp/modlishka-src && go build -o "$BIN/modlishka" . > /dev/null 2>&1)
 fi
 [ -x "$BIN/modlishka" ] && ok "modlishka (optional)" || echo "  SKIPPED: modlishka build did not complete (optional; Evilginx already covers AiTM)"
 
-if grep -qi kali /etc/os-release 2>/dev/null; then
+if grep -qi kali /etc/os-release 2>/dev/null && [ $SKIP_APT -eq 0 ]; then
   step "Kali extras (recon-ng, beef-xss)"
   sudo apt-get install -y -qq recon-ng beef-xss > /dev/null 2>&1 && ok "recon-ng + beef-xss (Kali)" || bad "Kali extras"
   echo "  Optional heavyweight: sudo apt install metasploit-framework"
 fi
+
+# ---------------- Smoke tests ----------------
+step "Smoke tests (every installed tool must actually answer)"
+export PATH="$BIN:$PATH"
+SMOKE_OK=0; SMOKE_FAIL=()
+probe(){ # probe <display-name> <command...>
+  local n="$1"; shift
+  if timeout 25 "$@" > /dev/null 2>&1; then SMOKE_OK=$((SMOKE_OK+1)); else SMOKE_FAIL+=("$n"); fi
+}
+probe sherlock     "$BIN/sherlock" --version
+probe maigret      "$BIN/maigret" --version
+probe socialscan   "$BIN/socialscan" --help
+probe nexfil       "$BIN/nexfil" --help
+probe holehe       "$BIN/holehe" --help
+probe theharvester "$BIN/theharvester" -h
+probe h8mail       "$BIN/h8mail" --help
+probe ghunt        "$BIN/ghunt" --help
+probe instaloader  "$BIN/instaloader" --version
+probe toutatis     "$BIN/toutatis" --help
+probe ignorant     "$BIN/ignorant" --help
+probe yt-dlp       "$BIN/yt-dlp" --version
+probe gallery-dl   "$BIN/gallery-dl" --version
+probe TikTokApi    "$ARSENAL/osint/venv-tiktokapi/bin/python" -c "import TikTokApi"
+for pair in "gophish:$ARSENAL/phishing/gophish/gophish" "evilginx:$ARSENAL/phishing/evilginx/evilginx" "phoneinfoga:$ARSENAL/osint/phoneinfoga/phoneinfoga"; do
+  n="${pair%%:*}"; f="${pair#*:}"
+  [ -x "$f" ] && SMOKE_OK=$((SMOKE_OK+1)) || SMOKE_FAIL+=("$n-binary")
+done
+echo "  Smoke tests passed: $SMOKE_OK"
+[ ${#SMOKE_FAIL[@]} -gt 0 ] && echo "  Smoke tests failed: ${SMOKE_FAIL[*]}"
 
 # ---------------- The se-arsenal command ----------------
 step "Installing the se-arsenal command"
@@ -253,6 +320,9 @@ case "${1:-help}" in
       if [ -x "$BIN/$t" ]; then ready=$((ready+1)); else missing=$((missing+1)); echo "  missing: $t"; fi
     done
     [ -x "$BIN/modlishka" ] && ready=$((ready+1)) || echo "  optional not built: modlishka"
+    [ -x "$ARSENAL/phishing/gophish/gophish" ] || echo "  missing binary: gophish"
+    [ -x "$ARSENAL/phishing/evilginx/evilginx" ] || echo "  missing binary: evilginx"
+    "$ARSENAL/osint/venv-tiktokapi/bin/python" -c "import TikTokApi" 2>/dev/null && echo "  TikTokApi library: OK" || echo "  TikTokApi library: MISSING"
     echo "SE-Arsenal check: $ready ready, $missing missing. Re-run install.sh to repair."
     ;;
   update)
@@ -270,7 +340,7 @@ case "${1:-help}" in
     else echo "Cancelled."; fi
     ;;
   *)
-    echo "se-arsenal · v${VERSION:-1.0.2}"
+    echo "se-arsenal · v${VERSION:-1.1.0}"
     echo "Usage: se-arsenal <list|check|update|remove>"
     ;;
 esac
@@ -296,6 +366,7 @@ if [ ${#FAIL[@]} -gt 0 ]; then
   for t in "${FAIL[@]}"; do echo "  ✗ $t"; done
   echo "Re-run install.sh to retry only the missing pieces."
 fi
+echo "Smoke tests: $SMOKE_OK passed, ${#SMOKE_FAIL[@]} failed${SMOKE_FAIL:+ (${SMOKE_FAIL[*]})}"
 echo
 echo "Manage everything with:  se-arsenal list | check | update | remove"
 echo "In THIS terminal, activate the launchers once with:"
